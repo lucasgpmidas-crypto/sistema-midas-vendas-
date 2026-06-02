@@ -1,18 +1,23 @@
 const { Pool } = require('pg');
 
-// Supabase → Project Settings → Database → Connection string → URI
-// O search_path='midas' isola as tabelas do Midas dos outros projetos
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // obrigatório no Supabase
-  max: 10,
+  host:     process.env.DB_HOST     || 'db.mqdmsyljjgyusovwfndo.supabase.co',
+  port:     parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME     || 'postgres',
+  user:     process.env.DB_USER     || 'postgres',
+  password: process.env.DB_PASSWORD,
+  ssl: { rejectUnauthorized: false },
+  max: 5,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
 });
 
-// Definir search_path em todas as conexões novas
 pool.on('connect', (client) => {
   client.query("SET search_path TO midas, public");
 });
 
-pool.on('er
+pool.on('error', (err) => {
+  console.error('Erro no pool PostgreSQL:', err.message);
+});
+
+module.exports = pool;
