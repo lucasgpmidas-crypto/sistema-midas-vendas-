@@ -26,6 +26,17 @@ app.use('/api/auth/login', rateLimit({
   message: { error: 'Muitas tentativas. Aguarde 15 minutos.' }
 }));
 
+// ── Diagnóstico temporário ────────────────────────────────
+app.get('/api/ping', async (_req, res) => {
+  try {
+    const db = require('./db');
+    const r = await db.query('SELECT current_schema() as schema, NOW() as ts');
+    res.json({ ok: true, schema: r.rows[0].schema, ts: r.rows[0].ts });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ── Rotas da API ───────────────────────────────────────────
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/dashboard',  authMiddleware, require('./routes/dashboard'));
