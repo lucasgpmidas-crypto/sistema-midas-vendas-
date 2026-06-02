@@ -26,29 +26,6 @@ app.use('/api/auth/login', rateLimit({
   message: { error: 'Muitas tentativas. Aguarde 15 minutos.' }
 }));
 
-// ── Diagnóstico temporário ────────────────────────────────
-app.get('/api/ping', async (_req, res) => {
-  const { Pool } = require('pg');
-  const cfg = {
-    host:     process.env.DB_HOST,
-    port:     parseInt(process.env.DB_PORT || '6543'),
-    database: process.env.DB_NAME || 'postgres',
-    user:     process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 8000,
-  };
-  const pool = new Pool(cfg);
-  try {
-    const r = await pool.query("SET search_path TO midas, public; SELECT current_schema() as schema, NOW() as ts");
-    res.json({ ok: true, config: { host: cfg.host, port: cfg.port, user: cfg.user }, result: r[1]?.rows[0] || r.rows[0] });
-  } catch(e) {
-    res.status(500).json({ ok: false, config: { host: cfg.host, port: cfg.port, user: cfg.user }, error: e.message });
-  } finally {
-    pool.end().catch(() => {});
-  }
-});
-
 // ── Rotas da API ───────────────────────────────────────────
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/dashboard',  authMiddleware, require('./routes/dashboard'));
