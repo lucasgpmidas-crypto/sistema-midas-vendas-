@@ -29,20 +29,18 @@ app.use('/api/auth/login', rateLimit({
 // ── Diagnóstico temporário ────────────────────────────────
 app.get('/api/ping', async (_req, res) => {
   const { Pool } = require('pg');
-  const configs = [
-    { label: 'pooler-ref-6543', host: 'aws-0-sa-east-1.pooler.supabase.com', port: 6543, user: 'postgres.mqdmsyljjgyusovwfndo', password: process.env.DB_PASSWORD },
-    { label: 'pooler-plain-6543', host: 'aws-0-sa-east-1.pooler.supabase.com', port: 6543, user: 'postgres', password: process.env.DB_PASSWORD },
-    { label: 'direct-5432', host: 'db.mqdmsyljjgyusovwfndo.supabase.co', port: 5432, user: 'postgres', password: process.env.DB_PASSWORD },
-  ];
+  const REF = 'mqdmsyljjgyusovwfndo';
+  const PWD = process.env.DB_PASSWORD;
+  const regions = ['us-east-1','us-west-1','eu-west-1','eu-central-1','sa-east-1','ap-southeast-1'];
   const results = {};
-  for (const cfg of configs) {
-    const { label, ...conn } = cfg;
-    const pool = new Pool({ ...conn, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
+  for (const r of regions) {
+    const host = `aws-0-${r}.pooler.supabase.com`;
+    const pool = new Pool({ host, port: 6543, user: `postgres.${REF}`, password: PWD, database: 'postgres', ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
     try {
       await pool.query('SELECT 1');
-      results[label] = 'OK';
+      results[r] = 'OK';
     } catch(e) {
-      results[label] = e.message;
+      results[r] = e.message.substring(0, 80);
     } finally {
       pool.end().catch(() => {});
     }
