@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -397,7 +397,7 @@ async function loadInitialData() {
   }
 }
 
-function showLoading(on) {
+async function showLoading(on) {
   let el = document.getElementById('global-loading');
   if (!el) {
     el = document.createElement('div');
@@ -409,8 +409,8 @@ function showLoading(on) {
 }
 
 // Compat: salvar no servidor (mantém DB local sincronizado)
-function saveDB() { /* dados salvos via API */ }
-function nextId(key) { return Date.now(); } // IDs vêm do servidor
+async function saveDB() { /* dados salvos via API */ }
+async function nextId(key) { return Date.now(); } // IDs vêm do servidor
 
 
 // ============================================================
@@ -446,7 +446,7 @@ async function doLogin(){
   }
 }
 
-function doLogout(){
+async function doLogout(){
   AUTH_TOKEN=null; currentUser=null;
   localStorage.removeItem('midas_token');
   DB={clientes:[],produtos:[],vendedores:[],vendas:[],movEstoque:[],contasReceber:[],
@@ -456,11 +456,11 @@ function doLogout(){
   document.getElementById('app').style.display='none';
 }
 
-function nivelLabel(n){
+async function nivelLabel(n){
   return {admin:'Administrador',gerente:'Gerente',vendedor:'Vendedor',financeiro:'Financeiro',estoque:'Estoque'}[n]||n;
 }
 
-function canAccess(nivel){
+async function canAccess(nivel){
   if(!currentUser)return false;
   if(currentUser.nivel==='admin')return true;
   const perms = {
@@ -478,7 +478,7 @@ function canAccess(nivel){
 let currentPage = '';
 let chartInstances = {};
 
-function goTo(page, params={}){
+async function goTo(page, params={}){
   if(!canAccess(page) && page!=='config'){
     // Allow config for admin only
     if(page==='config' && currentUser.nivel!=='admin'){toast('Acesso negado','error');return;}
@@ -532,12 +532,12 @@ function goTo(page, params={}){
   closeSidebar();
 }
 
-function toggleSidebar(){
+async function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
 }
 let sidebarMini = false;
-function toggleSidebarPin(){
+async function toggleSidebarPin(){
   sidebarMini = !sidebarMini;
   const sb = document.getElementById('sidebar');
   const main = document.querySelector('.main');
@@ -546,7 +546,7 @@ function toggleSidebarPin(){
   localStorage.setItem('midas_sidebar_mini', sidebarMini?'1':'0');
 }
 // Restaurar estado da sidebar ao logar
-function restoreSidebar(){
+async function restoreSidebar(){
   const saved = localStorage.getItem('midas_sidebar_mini');
   if(saved==='1'){
     sidebarMini=true;
@@ -554,7 +554,7 @@ function restoreSidebar(){
     document.querySelector('.main').classList.add('mini-margin');
   }
 }
-function closeSidebar(){
+async function closeSidebar(){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
 }
@@ -562,30 +562,30 @@ function closeSidebar(){
 // ============================================================
 // HELPERS
 // ============================================================
-function fmtMoeda(v){
+async function fmtMoeda(v){
   return 'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-function fmtNum(v){return parseFloat(v||0).toLocaleString('pt-BR');}
-function fmtDate(d){
+async function fmtNum(v){return parseFloat(v||0).toLocaleString('pt-BR');}
+async function fmtDate(d){
   if(!d)return '';
   const [y,m,day]=d.split('-');
   return `${day}/${m}/${y}`;
 }
-function fmtDateHour(d){
+async function fmtDateHour(d){
   return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
-function today(){return new Date().toISOString().split('T')[0];}
-function monthStart(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;}
-function nextId(key){const id=DB.nextIds[key];DB.nextIds[key]++;saveDB();return id;}
-function uuid(){return Date.now()+'_'+Math.random().toString(36).substr(2,5);}
+async function today(){return new Date().toISOString().split('T')[0];}
+async function monthStart(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;}
+async function nextId(key){const id=DB.nextIds[key];DB.nextIds[key]++;saveDB();return id;}
+async function uuid(){return Date.now()+'_'+Math.random().toString(36).substr(2,5);}
 
-function diasAtraso(dtVenc){
+async function diasAtraso(dtVenc){
   if(!dtVenc)return 0;
   const diff = new Date() - new Date(dtVenc+'T23:59:59');
   return diff>0?Math.floor(diff/864e5):0;
 }
 
-function statusVendaBadge(s){
+async function statusVendaBadge(s){
   const map={
     orcamento:'badge-gray',pedido_aberto:'badge-blue',separando:'badge-orange',
     enviado:'badge-purple',entregue:'badge-green',pago:'badge-green',
@@ -599,19 +599,19 @@ function statusVendaBadge(s){
   return `<span class="badge ${map[s]||'badge-gray'}">${lab[s]||s}</span>`;
 }
 
-function statusPagBadge(s){
+async function statusPagBadge(s){
   const map={pago:'badge-green',a_receber:'badge-orange',vencido:'badge-red',parcial:'badge-blue',cancelado:'badge-gray'};
   const lab={pago:'Pago',a_receber:'A Receber',vencido:'Vencido',parcial:'Parcial',cancelado:'Cancelado'};
   return `<span class="badge ${map[s]||'badge-gray'}">${lab[s]||s}</span>`;
 }
 
-function statusClienteBadge(s){
+async function statusClienteBadge(s){
   const map={ativo:'badge-green',inativo:'badge-gray',bloqueado:'badge-red'};
   const lab={ativo:'Ativo',inativo:'Inativo',bloqueado:'Bloqueado'};
   return `<span class="badge ${map[s]||'badge-gray'}">${lab[s]||s}</span>`;
 }
 
-function getCliente(id){
+async function getCliente(id){
   const c=DB.clientes.find(c=>c.id==id);
   if(!c)return{nome:'—',cidade:'',estado:''};
   return {...c,
@@ -622,8 +622,8 @@ function getCliente(id){
     prazoPagamento:(c.prazo_pagamento||c.prazoPagamento||30),
     vendedorId:(c.vendedor_id||c.vendedorId||null)};
 }
-function getVendedor(id){const v=DB.vendedores.find(v=>v.id==id);return v||{nome:'—'};}
-function getProduto(id){
+async function getVendedor(id){const v=DB.vendedores.find(v=>v.id==id);return v||{nome:'—'};}
+async function getProduto(id){
   const p=DB.produtos.find(p=>p.id==id);
   if(!p)return{nome:'—',precoVenda:0,precoCusto:0,estoqueAtual:0};
   return {...p,
@@ -634,7 +634,7 @@ function getProduto(id){
     estoqueMaximo:(p.estoque_maximo||p.estoqueMaximo||999)};
 }
 
-function updateBadges(){
+async function updateBadges(){
   const pendentes = DB.vendas.filter(v=>(v.status_pagamento||v.statusPagamento)==='vencido').length;
   const el = document.getElementById('badge-pendentes');
   if(el) el.textContent = pendentes||''; if(el) el.style.display=pendentes?'':'none';
@@ -648,7 +648,7 @@ function updateBadges(){
   if(el3) el3.textContent=venc||''; if(el3) el3.style.display=venc?'':'none';
 }
 
-function toast(msg, type='success'){
+async function toast(msg, type='success'){
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
   const ico = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
@@ -658,21 +658,21 @@ function toast(msg, type='success'){
   setTimeout(()=>t.remove(), 3500);
 }
 
-function logAction(acao, tabela, id, dados){
+async function logAction(acao, tabela, id, dados){
   DB.logs.push({id:DB.nextIds.log++,usuario:currentUser?.nome||'Sistema',acao,tabela,referencia:id,dados:JSON.stringify(dados).substr(0,200),em:new Date().toISOString()});
   saveDB();
 }
 
-function openModal(html){
+async function openModal(html){
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()">${html}</div>`;
 }
-function closeModal(){document.getElementById('modal-root').innerHTML='';}
+async function closeModal(){document.getElementById('modal-root').innerHTML='';}
 
 // ============================================================
 // DASHBOARD
 // ============================================================
-function getVendasFiltradas(filtros={}){
+async function getVendasFiltradas(filtros={}){
   let v = DB.vendas.filter(x=>x.status!=='cancelado');
   if(filtros.de) v=v.filter(x=>x.data>=filtros.de);
   if(filtros.ate) v=v.filter(x=>x.data<=filtros.ate);
@@ -685,7 +685,7 @@ function getVendasFiltradas(filtros={}){
   return v;
 }
 
-function calcKPIs(vendas){
+async function calcKPIs(vendas){
   const total = vendas.reduce((s,v)=>s+v.total,0);
   const custo = vendas.reduce((s,v)=>s+v.custo,0);
   const lucro = total-custo;
@@ -700,7 +700,7 @@ function calcKPIs(vendas){
   return {total,custo,lucro,qtd,ticket,frete,desc,pagas,receber,vencidas,canceladas:canceladas.length,canceladasVal:canceladas.reduce((s,v)=>s+v.total,0)};
 }
 
-function renderDashboard(){
+async function renderDashboard(){
   const hoje = new Date().toISOString().split('T')[0];
   const ms = monthStart();
 
@@ -795,7 +795,7 @@ function renderDashboard(){
   </div>`;
 }
 
-function applyDashFilters(){
+async function applyDashFilters(){
   const filtros={
     de:document.getElementById('f-de')?.value,
     ate:document.getElementById('f-ate')?.value,
@@ -816,9 +816,9 @@ function applyDashFilters(){
   if(filtros.status) document.getElementById('f-sv').value=filtros.status;
   initDashboardCharts(filtros);
 }
-function resetDashFilters(){goTo('dashboard');}
+async function resetDashFilters(){goTo('dashboard');}
 
-function initDashboardCharts(filtros={}){
+async function initDashboardCharts(filtros={}){
   const hoje = new Date().toISOString().split('T')[0];
   const ms = monthStart();
   const f = {de:filtros.de||ms,ate:filtros.ate||hoje,...filtros};
@@ -859,7 +859,7 @@ function initDashboardCharts(filtros={}){
 // CLIENTES
 // ============================================================
 let clienteSearch = '';
-function renderClientes(){
+async function renderClientes(){
   const clientes = DB.clientes.filter(c=>
     !clienteSearch || c.nome.toLowerCase().includes(clienteSearch.toLowerCase())||
     ((c.nome_fantasia||c.nomeFantasia||'')||'').toLowerCase().includes(clienteSearch.toLowerCase())||
@@ -904,7 +904,7 @@ function renderClientes(){
   </div>`;
 }
 
-function filtrarClienteStatus(s){
+async function filtrarClienteStatus(s){
   // Quick filter
   const rows = document.querySelectorAll('.tbl tbody tr');
   rows.forEach(r=>{
@@ -913,7 +913,7 @@ function filtrarClienteStatus(s){
   });
 }
 
-function abrirFormCliente(id=null){
+async function abrirFormCliente(id=null){
   const c = id?DB.clientes.find(x=>x.id===id):{};
   const isEdit = !!id;
   openModal(`<div class="modal modal-lg">
@@ -985,7 +985,7 @@ function abrirFormCliente(id=null){
   </div>`);
 }
 
-function toggleTipoCliente(){
+async function toggleTipoCliente(){
   const tipo = document.getElementById('c-tipo').value;
   document.getElementById('lbl-cpfcnpj').innerHTML = (tipo==='PF'?'CPF':'CNPJ')+' <span class="req">*</span>';
   document.getElementById('lbl-nome').innerHTML = (tipo==='PF'?'Nome Completo':'Razão Social')+' <span class="req">*</span>';
@@ -993,7 +993,7 @@ function toggleTipoCliente(){
   if(ie) ie.style.display = tipo==='PF'?'none':'';
 }
 
-function salvarCliente(id){
+async function salvarCliente(id){
   const nome = document.getElementById('c-nome').value.trim();
   const cpfCnpj = document.getElementById('c-cpfcnpj').value.trim();
   const cidade = document.getElementById('c-cidade').value.trim();
@@ -1047,7 +1047,7 @@ async function excluirCliente(id){
   } catch(err){ toast(err.message,'error'); }
 }
 
-function verCliente(id){
+async function verCliente(id){
   const c = DB.clientes.find(x=>x.id===id);
   if(!c)return;
   const vendas = DB.vendas.filter(v=>(v.cliente_id||v.clienteId)===id);
@@ -1118,7 +1118,7 @@ function verCliente(id){
   </div>`);
 }
 
-function switchTab(btn, panelId){
+async function switchTab(btn, panelId){
   btn.closest('.modal-body, .content').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   btn.closest('.modal-body, .content').querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
@@ -1130,7 +1130,7 @@ function switchTab(btn, panelId){
 // PRODUTOS
 // ============================================================
 let prodSearch='';
-function renderProdutos(){
+async function renderProdutos(){
   const showMargem = currentUser.nivel==='admin'||currentUser.nivel==='gerente'||currentUser.nivel==='estoque';
   const prods = DB.produtos.filter(p=>
     !prodSearch||p.nome.toLowerCase().includes(prodSearch.toLowerCase())||
@@ -1195,13 +1195,13 @@ function renderProdutos(){
   </div>`;
 }
 
-function filtrarProdCat(cat){
+async function filtrarProdCat(cat){
   document.querySelectorAll('.tbl tbody tr').forEach(r=>{
     r.style.display=(!cat||r.textContent.includes(cat))?'':'none';
   });
 }
 
-function abrirFormProduto(id=null){
+async function abrirFormProduto(id=null){
   const p = id?DB.produtos.find(x=>x.id===id):{status:'ativo',unidade:'UN',estoqueMinimo:10,estoqueMaximo:500};
   const cats=['Frios','Aves','Óleos','Grãos','Massas','Bebidas','Laticínios','Limpeza','Higiene','Outro'];
   openModal(`<div class="modal modal-lg">
@@ -1246,7 +1246,7 @@ function abrirFormProduto(id=null){
   calcMargem();
 }
 
-function calcMargem(){
+async function calcMargem(){
   const custo = parseFloat(document.getElementById('p-custo')?.value)||0;
   const venda = parseFloat(document.getElementById('p-venda')?.value)||0;
   const el = document.getElementById('p-margem');
@@ -1258,7 +1258,7 @@ function calcMargem(){
   }
 }
 
-function salvarProduto(id){
+async function salvarProduto(id){
   const nome = document.getElementById('p-nome').value.trim();
   const custo = parseFloat(document.getElementById('p-custo').value)||0;
   const venda = parseFloat(document.getElementById('p-venda').value)||0;
@@ -1312,7 +1312,7 @@ async function excluirProduto(id){
 // ============================================================
 // ESTOQUE
 // ============================================================
-function registrarMov(produtoId,tipo,quantidade,obs,vendaId=null){
+async function registrarMov(produtoId,tipo,quantidade,obs,vendaId=null){
   DB.movEstoque.push({
     id:DB.nextIds.mov++,produtoId,tipo,quantidade:+quantidade,
     obs,vendaId,usuario:currentUser?.nome||'Sistema',
@@ -1320,7 +1320,7 @@ function registrarMov(produtoId,tipo,quantidade,obs,vendaId=null){
   });
 }
 
-function abrirMovEstoque(prodId=null){
+async function abrirMovEstoque(prodId=null){
   const prods = DB.produtos.filter(p=>p.status==='ativo');
   openModal(`<div class="modal modal-sm">
     <div class="modal-head"><h2>📦 Movimentação de Estoque</h2><button class="btn-close" onclick="closeModal()">✕</button></div>
@@ -1349,7 +1349,7 @@ function abrirMovEstoque(prodId=null){
   </div>`);
 }
 
-function salvarMov(){
+async function salvarMov(){
   const prodId = +document.getElementById('m-prod').value;
   const tipo = document.getElementById('m-tipo').value;
   const qty = +document.getElementById('m-qty').value;
@@ -1371,7 +1371,7 @@ function salvarMov(){
   } catch(err){ toast(err.message,'error'); }
 }
 
-function renderEstoque(){
+async function renderEstoque(){
   const prods = DB.produtos;
   const movs = DB.movEstoque.slice().reverse().slice(0,50);
   const baixo = prods.filter(p=>(p.estoque_atual||p.estoqueAtual||0)<=(p.estoque_minimo||p.estoqueMinimo||0)&&p.status==='ativo');
@@ -1462,7 +1462,7 @@ function renderEstoque(){
   </div>`;
 }
 
-function switchTabSimple(btn, id){
+async function switchTabSimple(btn, id){
   const parent = btn.closest('.content');
   parent.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
@@ -1475,7 +1475,7 @@ function switchTabSimple(btn, id){
 // ============================================================
 // VENDEDORES
 // ============================================================
-function renderVendedores(){
+async function renderVendedores(){
   return `
   <div class="page-header">
     <h2>👤 Vendedores</h2>
@@ -1529,7 +1529,7 @@ function renderVendedores(){
   }).join('')}`;
 }
 
-function abrirFormVendedor(id=null){
+async function abrirFormVendedor(id=null){
   const v=id?DB.vendedores.find(x=>x.id===id):{status:'ativo',comissao:3,meta:30000};
   openModal(`<div class="modal">
     <div class="modal-head"><h2>${id?'Editar':'Novo'} Vendedor</h2><button class="btn-close" onclick="closeModal()">✕</button></div>
@@ -1556,7 +1556,7 @@ function abrirFormVendedor(id=null){
   </div>`);
 }
 
-function salvarVendedor(id){
+async function salvarVendedor(id){
   const nome=document.getElementById('v-nome').value.trim();
   if(!nome){toast('Nome obrigatório','error');return;}
   const dados={
@@ -1601,7 +1601,7 @@ async function excluirVendedor(id){
 // ============================================================
 let vendaSearch='',vendaFiltros={};
 
-function renderVendas(){
+async function renderVendas(){
   let vendas = DB.vendas.slice().sort((a,b)=>b.data.localeCompare(a.data)||b.id-a.id);
 
   if(vendaSearch) vendas=vendas.filter(v=>
@@ -1703,7 +1703,7 @@ function renderVendas(){
 let vendaItens = [];
 let editandoVendaId = null;
 
-function abrirFormVenda(id=null){
+async function abrirFormVenda(id=null){
   editandoVendaId = id;
   const v = id ? DB.vendas.find(x=>x.id===id) : null;
   vendaItens = v ? JSON.parse(JSON.stringify(v.itens)).map(i=>({
@@ -1819,7 +1819,7 @@ function abrirFormVenda(id=null){
   calcVencimento();
 }
 
-function preencherCidadeEstado(){
+async function preencherCidadeEstado(){
   const cliId = +document.getElementById('vd-cli').value;
   if(!cliId)return;
   const cli = DB.clientes.find(c=>c.id===cliId);
@@ -1834,7 +1834,7 @@ function preencherCidadeEstado(){
   }
 }
 
-function calcVencimento(){
+async function calcVencimento(){
   const prazo=+document.getElementById('vd-prazo')?.value||0;
   const data=document.getElementById('vd-data')?.value||today();
   const dt=new Date(data+'T00:00:00');
@@ -1843,7 +1843,7 @@ function calcVencimento(){
   if(el) el.value=dt.toISOString().split('T')[0];
 }
 
-function addItemVenda(){
+async function addItemVenda(){
   const sel=document.getElementById('add-prod-sel');
   const prodId=+sel.value;
   if(!prodId)return;
@@ -1858,7 +1858,7 @@ function addItemVenda(){
   sel.value='';
 }
 
-function renderItensVenda(){
+async function renderItensVenda(){
   const tbody=document.getElementById('items-body');
   if(!tbody)return;
   const showMargem=currentUser.nivel==='admin'||currentUser.nivel==='gerente';
@@ -1884,7 +1884,7 @@ function renderItensVenda(){
   calcTotaisVenda();
 }
 
-function calcItemTotal(i){
+async function calcItemTotal(i){
   const item=vendaItens[i];
   const bruto = item.quantidade * item.valorUnitario;
   const desc = Math.min(item.desconto||0, bruto); // desconto em R$, não pode passar do bruto
@@ -1892,12 +1892,12 @@ function calcItemTotal(i){
   renderItensVenda();
 }
 
-function removerItem(i){
+async function removerItem(i){
   vendaItens.splice(i,1);
   renderItensVenda();
 }
 
-function calcTotaisVenda(){
+async function calcTotaisVenda(){
   const subtotal=vendaItens.reduce((s,i)=>s+(i.valor_unitario||i.valorUnitario||0)*i.quantidade,0);
   const descTotal=vendaItens.reduce((s,i)=>s+(i.desconto||0),0);
   const frete=parseFloat(document.getElementById('vd-frete')?.value)||0;
@@ -1917,7 +1917,7 @@ function calcTotaisVenda(){
   set('tot-margem',margem+'%');
 }
 
-function salvarVenda(){
+async function salvarVenda(){
   const cliId=+document.getElementById('vd-cli').value;
   const vendId=+document.getElementById('vd-vend').value;
   const data=document.getElementById('vd-data').value;
@@ -2032,7 +2032,7 @@ async function cancelarVenda(id){
   } catch(err){ toast(err.message,'error'); }
 }
 
-function abrirPagamento(vendaId){
+async function abrirPagamento(vendaId){
   const v=DB.vendas.find(x=>x.id===vendaId);
   const conta=DB.contasReceber.find(c=>c.vendaId===vendaId);
   const emAberto=conta?conta.valorAberto:v.total;
@@ -2075,7 +2075,7 @@ async function confirmarPagamento(vendaId){
   } catch(err){ toast(err.message,'error'); }
 }
 
-function verVenda(id){
+async function verVenda(id){
   const v=DB.vendas.find(x=>x.id===id);
   if(!v)return;
   const cli=getCliente((v.cliente_id||v.clienteId));
@@ -2145,7 +2145,7 @@ function verVenda(id){
 // ============================================================
 // FINANCEIRO / CONTAS A RECEBER
 // ============================================================
-function renderFinanceiro(){
+async function renderFinanceiro(){
   const contas = DB.contasReceber.slice().sort((a,b)=>a.dataVencimento.localeCompare(b.dataVencimento));
   const vencidas = contas.filter(c=>c.status!=='pago'&&diasAtraso(c.dataVencimento)>0);
   const totalAberto = contas.filter(c=>c.status!=='pago').reduce((s,c)=>s+c.valorAberto,0);
@@ -2213,7 +2213,7 @@ function renderFinanceiro(){
   </div>`;
 }
 
-function abrirPagContaId(contaId){
+async function abrirPagContaId(contaId){
   const conta=DB.contasReceber.find(c=>c.id===contaId);
   if(!conta)return;
   if(conta.vendaId){abrirPagamento(conta.vendaId);}
@@ -2224,7 +2224,7 @@ function abrirPagContaId(contaId){
 // ============================================================
 let relFiltros={de:monthStart(),ate:today()};
 
-function renderRelatorios(){
+async function renderRelatorios(){
   return `
   <div class="page-header"><h2>📈 Relatórios</h2></div>
   <div class="filter-bar">
@@ -2275,7 +2275,7 @@ function renderRelatorios(){
   </div>`;
 }
 
-function onChangeTipoRel(){
+async function onChangeTipoRel(){
   const tipo=document.getElementById('rel-tipo')?.value;
   // Mostrar filtros extras conforme o tipo
   const fProd=document.getElementById('f-filtro-prod');
@@ -2286,7 +2286,7 @@ function onChangeTipoRel(){
 }
 
 let relData=[];
-function gerarRelatorio(){
+async function gerarRelatorio(){
   const tipo=document.getElementById('rel-tipo')?.value;
   const de=document.getElementById('rel-de')?.value||relFiltros.de;
   const ate=document.getElementById('rel-ate')?.value||relFiltros.ate;
@@ -2540,7 +2540,7 @@ function gerarRelatorio(){
   initRelChart();
 }
 
-function initRelChart(){
+async function initRelChart(){
   const tipo=document.getElementById('rel-tipo')?.value;
   const ctx1=document.getElementById('relChart');
   const ctx2=document.getElementById('relChart2');
@@ -2594,7 +2594,7 @@ function initRelChart(){
 }
 
 let exportRelCache=[];
-function exportarRelatorio(){
+async function exportarRelatorio(){
   const tipo=document.getElementById('rel-tipo')?.value||'relatorio';
   if(!relData.length){toast('Gere um relatório primeiro','error');return;}
   exportarCSVDado(relData,tipo);
@@ -2603,7 +2603,7 @@ function exportarRelatorio(){
 // ============================================================
 // ANÁLISES
 // ============================================================
-function renderAnalises(){
+async function renderAnalises(){
   const showMargem=currentUser.nivel==='admin'||currentUser.nivel==='gerente';
   const vendas=DB.vendas.filter(v=>v.status!=='cancelado');
   const hoje=new Date();
@@ -2719,7 +2719,7 @@ function renderAnalises(){
   </div>`;
 }
 
-function initAnalCharts(){
+async function initAnalCharts(){
   const hoje=new Date();
   // Chart 1: por semana (últimas 12 semanas)
   const semanas=[];const vals=[];
@@ -2744,7 +2744,7 @@ function initAnalCharts(){
 // ============================================================
 // CONFIGURAÇÕES
 // ============================================================
-function renderConfig(){
+async function renderConfig(){
   if(currentUser.nivel!=='admin'){return `<div class="alert alert-danger">Acesso restrito ao Administrador.</div>`;}
   const cfg=DB.config;
   // Usuários carregados via API na abertura de config
@@ -2815,7 +2815,7 @@ function renderConfig(){
   </div>`;
 }
 
-function salvarConfig(){
+async function salvarConfig(){
   DB.config.empresa=document.getElementById('cfg-emp').value;
   DB.config.cnpj=document.getElementById('cfg-cnpj').value;
   DB.config.telefone=document.getElementById('cfg-tel').value;
@@ -2827,7 +2827,7 @@ function salvarConfig(){
   toast('Configurações salvas');
 }
 
-function abrirFormUsuario(id=null){
+async function abrirFormUsuario(id=null){
   const u=id?DB.usuarios.find(x=>x.id===id):{status:'ativo',nivel:'vendedor'};
   openModal(`<div class="modal modal-sm">
     <div class="modal-head"><h2>${id?'Editar':'Novo'} Usuário</h2><button class="btn-close" onclick="closeModal()">✕</button></div>
@@ -2886,7 +2886,7 @@ async function salvarUsuario(id){
 // ============================================================
 // EXPORT CSV
 // ============================================================
-function exportarCSV(tipo){
+async function exportarCSV(tipo){
   let rows=[];let cols=[];let filename='';
   if(tipo==='clientes'){
     cols=['Código','Nome','Fantasia','CPF/CNPJ','Tipo','Cidade','Estado','Telefone','Status','Limite','Prazo'];
@@ -2909,14 +2909,14 @@ function exportarCSV(tipo){
   downloadCSV([cols,...rows],filename);
 }
 
-function exportarCSVDado(data,nome){
+async function exportarCSVDado(data,nome){
   if(!data.length)return;
   const cols=Object.keys(data[0]);
   const rows=data.map(r=>Object.values(r));
   downloadCSV([cols,...rows],nome);
 }
 
-function downloadCSV(rows,nome){
+async function downloadCSV(rows,nome){
   const bom='﻿';
   const csv=bom+rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');
@@ -2955,7 +2955,7 @@ async function buscaCEP(){
 // ============================================================
 let prodSelecionadoId = null;
 
-function filtrarProdutosVenda(){
+async function filtrarProdutosVenda(){
   const q=(document.getElementById('prod-busca')?.value||'').toLowerCase().trim();
   const lista=document.getElementById('prod-lista');
   if(!lista)return;
@@ -2985,7 +2985,7 @@ function filtrarProdutosVenda(){
   lista.style.display='block';
 }
 
-function selecionarProduto(id,nome){
+async function selecionarProduto(id,nome){
   prodSelecionadoId=id;
   const input=document.getElementById('prod-busca');
   const lista=document.getElementById('prod-lista');
@@ -2995,7 +2995,7 @@ function selecionarProduto(id,nome){
   if(lista) lista.style.display='none';
 }
 
-function navProdLista(e){
+async function navProdLista(e){
   const lista=document.getElementById('prod-lista');
   if(!lista||lista.style.display==='none')return;
   const opts=[...lista.querySelectorAll('.prod-opt')];
@@ -3015,7 +3015,7 @@ document.addEventListener('click',e=>{
   }
 });
 
-function addItemVendaById(){
+async function addItemVendaById(){
   const id=prodSelecionadoId||+document.getElementById('add-prod-sel')?.value;
   if(!id){toast('Selecione um produto','error');return;}
   const prod=DB.produtos.find(p=>p.id===id);
@@ -3042,7 +3042,7 @@ function addItemVendaById(){
 // ============================================================
 // DUPLICAR VENDA
 // ============================================================
-function duplicarVenda(id){
+async function duplicarVenda(id){
   const v=DB.vendas.find(x=>x.id===id);
   if(!v)return;
   // Abrir form de nova venda com os dados pré-preenchidos
@@ -3131,7 +3131,7 @@ function duplicarVenda(id){
 // ============================================================
 // IMPRIMIR / EXPORTAR PDF
 // ============================================================
-function imprimirVenda(id){
+async function imprimirVenda(id){
   const v=DB.vendas.find(x=>x.id===id);
   if(!v)return;
   const cli=getCliente((v.cliente_id||v.clienteId));
@@ -3260,7 +3260,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // Atualizar data no topbar
-function atualizarRelogio(){
+async function atualizarRelogio(){
   const el=document.getElementById('top-date');
   if(el) el.textContent=new Date().toLocaleString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
