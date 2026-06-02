@@ -397,7 +397,7 @@ async function loadInitialData() {
   }
 }
 
-async function showLoading(on) {
+function showLoading(on) {
   let el = document.getElementById('global-loading');
   if (!el) {
     el = document.createElement('div');
@@ -409,7 +409,7 @@ async function showLoading(on) {
 }
 
 // Compat: salvar no servidor (mantém DB local sincronizado)
-async function saveDB() { /* dados salvos via API */ }
+function saveDB() { /* dados salvos via API */ }
 function nextId(key) { return Date.now(); } // IDs vêm do servidor
 
 
@@ -446,7 +446,7 @@ async function doLogin(){
   }
 }
 
-async function doLogout(){
+function doLogout(){
   AUTH_TOKEN=null; currentUser=null;
   localStorage.removeItem('midas_token');
   DB={clientes:[],produtos:[],vendedores:[],vendas:[],movEstoque:[],contasReceber:[],
@@ -456,11 +456,11 @@ async function doLogout(){
   document.getElementById('app').style.display='none';
 }
 
-async function nivelLabel(n){
+function nivelLabel(n){
   return {admin:'Administrador',gerente:'Gerente',vendedor:'Vendedor',financeiro:'Financeiro',estoque:'Estoque'}[n]||n;
 }
 
-async function canAccess(nivel){
+function canAccess(nivel){
   if(!currentUser)return false;
   if(currentUser.nivel==='admin')return true;
   const perms = {
@@ -478,7 +478,7 @@ async function canAccess(nivel){
 let currentPage = '';
 let chartInstances = {};
 
-async function goTo(page, params={}){
+function goTo(page, params={}){
   if(!canAccess(page) && page!=='config'){
     // Allow config for admin only
     if(page==='config' && currentUser.nivel!=='admin'){toast('Acesso negado','error');return;}
@@ -839,7 +839,7 @@ function initDashboardCharts(filtros={}){
   const vendMap={};
   vendas.forEach(v=>{vendMap[(v.vendedor_id||v.vendedorId)]=(vendMap[(v.vendedor_id||v.vendedorId)]||0)+v.total;});
   const ctx2=document.getElementById('chartVend');
-  if(ctx2) chartInstances.vend=new Chart(ctx2,{type:'bar',data:{labels:Object.keys(vendMap).map(id=>getVendedor(+id).nome.split(' ')[0]),datasets:[{data:Object.values(vendMap),backgroundColor:['#C9A84C','#3B82F6','#2ECC71','#E74C3C','#9B59B6']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,0.05)'}},x:{grid:{display:false}}}}});
+  if(ctx2) chartInstances.vend=new Chart(ctx2,{type:'bar',data:{labels:Object.keys(vendMap).map(id=>(getVendedor(+id)||{nome:'—'}).nome.split(' ')[0]),datasets:[{data:Object.values(vendMap),backgroundColor:['#C9A84C','#3B82F6','#2ECC71','#E74C3C','#9B59B6']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,0.05)'}},x:{grid:{display:false}}}}});
 
   // Chart 3: top produtos
   const prodMap={};
@@ -985,7 +985,7 @@ function abrirFormCliente(id=null){
   </div>`);
 }
 
-async function toggleTipoCliente(){
+function toggleTipoCliente(){
   const tipo = document.getElementById('c-tipo').value;
   document.getElementById('lbl-cpfcnpj').innerHTML = (tipo==='PF'?'CPF':'CNPJ')+' <span class="req">*</span>';
   document.getElementById('lbl-nome').innerHTML = (tipo==='PF'?'Nome Completo':'Razão Social')+' <span class="req">*</span>';
@@ -1246,7 +1246,7 @@ function abrirFormProduto(id=null){
   calcMargem();
 }
 
-async function calcMargem(){
+function calcMargem(){
   const custo = parseFloat(document.getElementById('p-custo')?.value)||0;
   const venda = parseFloat(document.getElementById('p-venda')?.value)||0;
   const el = document.getElementById('p-margem');
@@ -1312,7 +1312,7 @@ async function excluirProduto(id){
 // ============================================================
 // ESTOQUE
 // ============================================================
-async function registrarMov(produtoId,tipo,quantidade,obs,vendaId=null){
+function registrarMov(produtoId,tipo,quantidade,obs,vendaId=null){
   DB.movEstoque.push({
     id:DB.nextIds.mov++,produtoId,tipo,quantidade:+quantidade,
     obs,vendaId,usuario:currentUser?.nome||'Sistema',
@@ -1320,7 +1320,7 @@ async function registrarMov(produtoId,tipo,quantidade,obs,vendaId=null){
   });
 }
 
-async function abrirMovEstoque(prodId=null){
+function abrirMovEstoque(prodId=null){
   const prods = DB.produtos.filter(p=>p.status==='ativo');
   openModal(`<div class="modal modal-sm">
     <div class="modal-head"><h2>📦 Movimentação de Estoque</h2><button class="btn-close" onclick="closeModal()">✕</button></div>
@@ -1360,8 +1360,8 @@ async function salvarMov(){
     const res = await api('POST','/api/estoque/movimentacao',{produto_id:prodId,tipo,quantidade:qty,obs});
     // Atualizar cache local
     const prod = DB.produtos.find(p=>p.id===prodId);
-    if(prod) prod.estoque_atual = res.estoque_atual;
-    toast(`Estoque atualizado: ${res.produto} → ${res.estoque_atual}`);
+    if(prod) prod.estoque_atual = (res.estoque_atual||res.estoqueAtual);
+    toast(`Estoque atualizado: ${res.produto} → ${(res.estoque_atual||res.estoqueAtual)}`);
     closeModal();
     // Recarregar dados
     const prods = await api('GET','/api/produtos');
@@ -1529,7 +1529,7 @@ function renderVendedores(){
   }).join('')}`;
 }
 
-async function abrirFormVendedor(id=null){
+function abrirFormVendedor(id=null){
   const v=id?DB.vendedores.find(x=>x.id===id):{status:'ativo',comissao:3,meta:30000};
   openModal(`<div class="modal">
     <div class="modal-head"><h2>${id?'Editar':'Novo'} Vendedor</h2><button class="btn-close" onclick="closeModal()">✕</button></div>
@@ -1667,7 +1667,7 @@ function renderVendas(){
       ${vendas.slice(0,100).map(v=>{
         const cli=getCliente((v.cliente_id||v.clienteId));
         const vend=getVendedor((v.vendedor_id||v.vendedorId));
-        const atrasado=(v.status_pagamento||v.statusPagamento)==='vencido'||diasAtraso((v.data_vencimento||v.dataVencimento))>0&&(v.status_pagamento||v.statusPagamento)==='a_receber';
+        const atrasado=(v.status_pagamento||v.statusPagamento)==='vencido'||diasAtraso(v.data_vencimento||v.dataVencimento||"")>0&&(v.status_pagamento||v.statusPagamento)==='a_receber';
         return `<tr ${atrasado?'style="background:rgba(231,76,60,0.04)"':''}>
           <td style="font-weight:600;color:var(--gold)">${v.numero}</td>
           <td>${fmtDate(v.data)}</td>
@@ -1917,7 +1917,7 @@ function calcTotaisVenda(){
   set('tot-margem',margem+'%');
 }
 
-function salvarVenda(){
+async function salvarVenda(){
   const cliId=+document.getElementById('vd-cli').value;
   const vendId=+document.getElementById('vd-vend').value;
   const data=document.getElementById('vd-data').value;
@@ -2032,7 +2032,7 @@ async function cancelarVenda(id){
   } catch(err){ toast(err.message,'error'); }
 }
 
-async function abrirPagamento(vendaId){
+function abrirPagamento(vendaId){
   const v=DB.vendas.find(x=>x.id===vendaId);
   const conta=DB.contasReceber.find(c=>c.vendaId===vendaId);
   const emAberto=conta?conta.valorAberto:v.total;
@@ -2097,7 +2097,7 @@ function verVenda(id){
         <div class="detail-item"><label>Cliente</label><span style="font-weight:600">${cli.nome}</span></div>
         <div class="detail-item"><label>Vendedor</label><span>${vend.nome}</span></div>
         <div class="detail-item"><label>Data</label><span>${fmtDate(v.data)}</span></div>
-        <div class="detail-item"><label>Vencimento</label><span style="color:${diasAtraso((v.data_vencimento||v.dataVencimento))>0&&(v.status_pagamento||v.statusPagamento)!=='pago'?'var(--red)':'var(--text)'}">${fmtDate((v.data_vencimento||v.dataVencimento))}</span></div>
+        <div class="detail-item"><label>Vencimento</label><span style="color:${diasAtraso(v.data_vencimento||v.dataVencimento||"")>0&&(v.status_pagamento||v.statusPagamento)!=='pago'?'var(--red)':'var(--text)'}">${fmtDate((v.data_vencimento||v.dataVencimento))}</span></div>
         <div class="detail-item"><label>Forma Pgto</label><span>${(v.forma_pagamento||v.formaPagamento)}</span></div>
         <div class="detail-item"><label>Cidade/UF</label><span>${v.cidade}/${v.estado}</span></div>
         <div class="detail-item"><label>Entrega</label><span>${v.tipoEntrega}</span></div>
@@ -2146,7 +2146,7 @@ function verVenda(id){
 // FINANCEIRO / CONTAS A RECEBER
 // ============================================================
 function renderFinanceiro(){
-  const contas = DB.contasReceber.slice().sort((a,b)=>a.dataVencimento.localeCompare(b.dataVencimento));
+  const contas = DB.contasReceber.slice().sort((a,b)=>(a.data_vencimento||a.dataVencimento||"").localeCompare(b.data_vencimento||b.dataVencimento||""));
   const vencidas = contas.filter(c=>c.status!=='pago'&&diasAtraso(c.dataVencimento)>0);
   const totalAberto = contas.filter(c=>c.status!=='pago').reduce((s,c)=>s+c.valorAberto,0);
   const totalVencido = vencidas.reduce((s,c)=>s+c.valorAberto,0);
@@ -2286,7 +2286,7 @@ function onChangeTipoRel(){
 }
 
 let relData=[];
-function gerarRelatorio(){
+async function gerarRelatorio(){
   const tipo=document.getElementById('rel-tipo')?.value;
   const de=document.getElementById('rel-de')?.value||relFiltros.de;
   const ate=document.getElementById('rel-ate')?.value||relFiltros.ate;
@@ -2594,7 +2594,7 @@ function initRelChart(){
 }
 
 let exportRelCache=[];
-function exportarRelatorio(){
+async function exportarRelatorio(){
   const tipo=document.getElementById('rel-tipo')?.value||'relatorio';
   if(!relData.length){toast('Gere um relatório primeiro','error');return;}
   exportarCSVDado(relData,tipo);
@@ -3042,7 +3042,7 @@ function addItemVendaById(){
 // ============================================================
 // DUPLICAR VENDA
 // ============================================================
-function duplicarVenda(id){
+async function duplicarVenda(id){
   const v=DB.vendas.find(x=>x.id===id);
   if(!v)return;
   // Abrir form de nova venda com os dados pré-preenchidos
@@ -3260,7 +3260,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // Atualizar data no topbar
-async function atualizarRelogio(){
+function atualizarRelogio(){
   const el=document.getElementById('top-date');
   if(el) el.textContent=new Date().toLocaleString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
