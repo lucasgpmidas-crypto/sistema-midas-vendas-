@@ -29,23 +29,24 @@ app.use('/api/auth/login', rateLimit({
 // ── Diagnóstico temporário ────────────────────────────────
 app.get('/api/ping', async (_req, res) => {
   const { Pool } = require('pg');
-  const REF = 'mqdmsyljjgyusovwfndo';
-  const PWD = process.env.DB_PASSWORD;
-  const regions = ['us-east-1','us-west-1','eu-west-1','eu-central-1','sa-east-1','ap-southeast-1'];
-  const results = {};
-  for (const r of regions) {
-    const host = `aws-0-${r}.pooler.supabase.com`;
-    const pool = new Pool({ host, port: 6543, user: `postgres.${REF}`, password: PWD, database: 'postgres', ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
-    try {
-      await pool.query('SELECT 1');
-      results[r] = 'OK';
-    } catch(e) {
-      results[r] = e.message.substring(0, 80);
-    } finally {
-      pool.end().catch(() => {});
-    }
+  const cfg = {
+    host:     process.env.DB_HOST,
+    port:     parseInt(process.env.DB_PORT || '6543'),
+    database: process.env.DB_NAME || 'postgres',
+    user:     process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 8000,
+  };
+  const pool = new Pool(cfg);
+  try {
+    const r = await pool.query("SET search_path TO midas, public; SELECT current_schema() as schema, NOW() as ts");
+    res.json({ ok: true, config: { host: cfg.host, port: cfg.port, user: cfg.user }, result: r[1]?.rows[0] || r.rows[0] });
+  } catch(e) {
+    res.status(500).json({ ok: false, config: { host: cfg.host, port: cfg.port, user: cfg.user }, error: e.message });
+  } finally {
+    pool.end().catch(() => {});
   }
-  res.json(results);
 });
 
 // ── Rotas da API ───────────────────────────────────────────
