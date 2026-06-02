@@ -1,18 +1,31 @@
-const { createClient } = require('@supabase/supabase-js');
+const { Pool } = require('pg');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-  { db: { schema: 'midas' } }
-);
+let pool = null;
 
-// Compatibilidade com db.query() usado nas rotas
-const db = {
-  query: async (sql, params = []) => {
-    const { data, error } = await supabase.rpc('exec_sql', { sql, params });
-    if (error) throw error;
-    return { rows: data || [] };
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      host:     process.env.DB_HOST || 'db.mqdmsyljjgyusovwfndo.supabase.co',
+      port:     parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'postgres',
+      user:     process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD,
+      ssl: { rejectUnauthorized: false },
+      max: 3,
+      idleTimeoutMillis: 20000,
+      connectionTimeoutMillis: 10000,
+    });
+    pool.on('connect', (client) => {
+      client.query("SET search_path TO midas, public");
+    });
+    pool.on('error', (err) => {
+      console.error('Pool error:', err.message);
+      pool = null;
+    });
   }
-};
+  return pool;
+}
 
-module.exports = db;
+module.exports = {
+  query: (sql, params) => getPool().query(sql, params),
+};
