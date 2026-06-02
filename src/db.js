@@ -15,9 +15,6 @@ function getPool() {
       idleTimeoutMillis: 20000,
       connectionTimeoutMillis: 10000,
     });
-    pool.on('connect', (client) => {
-      client.query("SET search_path TO midas, public");
-    });
     pool.on('error', (err) => {
       console.error('Pool error:', err.message);
       pool = null;
@@ -26,6 +23,15 @@ function getPool() {
   return pool;
 }
 
-module.exports = {
-  query: (sql, params) => getPool().query(sql, params),
-};
+// Cada query define o search_path pois o transaction pooler nao preserva sessao
+async function query(sql, params) {
+  const client = await getPool().connect();
+  try {
+    await client.query('SET search_path TO midas, public');
+    return await client.query(sql, params);
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { query };
