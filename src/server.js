@@ -28,13 +28,26 @@ app.use('/api/auth/login', rateLimit({
 
 // ── Diagnóstico temporário ────────────────────────────────
 app.get('/api/ping', async (_req, res) => {
-  try {
-    const db = require('./db');
-    const r = await db.query('SELECT current_schema() as schema, NOW() as ts');
-    res.json({ ok: true, schema: r.rows[0].schema, ts: r.rows[0].ts });
-  } catch(e) {
-    res.status(500).json({ ok: false, error: e.message });
+  const { Pool } = require('pg');
+  const configs = [
+    { label: 'pooler-ref-6543', host: 'aws-0-sa-east-1.pooler.supabase.com', port: 6543, user: 'postgres.mqdmsyljjgyusovwfndo', password: process.env.DB_PASSWORD },
+    { label: 'pooler-plain-6543', host: 'aws-0-sa-east-1.pooler.supabase.com', port: 6543, user: 'postgres', password: process.env.DB_PASSWORD },
+    { label: 'direct-5432', host: 'db.mqdmsyljjgyusovwfndo.supabase.co', port: 5432, user: 'postgres', password: process.env.DB_PASSWORD },
+  ];
+  const results = {};
+  for (const cfg of configs) {
+    const { label, ...conn } = cfg;
+    const pool = new Pool({ ...conn, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
+    try {
+      await pool.query('SELECT 1');
+      results[label] = 'OK';
+    } catch(e) {
+      results[label] = e.message;
+    } finally {
+      pool.end().catch(() => {});
+    }
   }
+  res.json(results);
 });
 
 // ── Rotas da API ───────────────────────────────────────────

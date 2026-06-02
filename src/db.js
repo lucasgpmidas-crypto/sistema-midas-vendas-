@@ -1,23 +1,18 @@
-const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
 
-const pool = new Pool({
-  host:     process.env.DB_HOST     || 'db.mqdmsyljjgyusovwfndo.supabase.co',
-  port:     parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME     || 'postgres',
-  user:     process.env.DB_USER     || 'postgres',
-  password: process.env.DB_PASSWORD,
-  ssl: { rejectUnauthorized: false },
-  max: 5,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY,
+  { db: { schema: 'midas' } }
+);
 
-pool.on('connect', (client) => {
-  client.query("SET search_path TO midas, public");
-});
+// Compatibilidade com db.query() usado nas rotas
+const db = {
+  query: async (sql, params = []) => {
+    const { data, error } = await supabase.rpc('exec_sql', { sql, params });
+    if (error) throw error;
+    return { rows: data || [] };
+  }
+};
 
-pool.on('error', (err) => {
-  console.error('Erro no pool PostgreSQL:', err.message);
-});
-
-module.exports = pool;
+module.exports = db;
